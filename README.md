@@ -4,7 +4,7 @@
 
 ## Business Problem Summary
 
-A retail leadership team needs an executive dashboard to monitor sales performance, profitability, customer segments, category performance, shipping performance, discount impact, and return patterns across their 2024–2025 operations. The dashboard must support active decision-making — not just reporting — by surfacing risks and opportunities from 4,200 orders and Rs 21.7 crore in sales.
+A retail leadership team needs an executive dashboard to monitor sales performance, profitability, customer segments, category performance, shipping performance, discount impact, and return patterns across their 2024–2025 operations. The dashboard must support active decision-making — not just reporting — by surfacing risks and opportunities from 4,200 orders and Rs 21.70 Crore in sales across four regions, three categories, and three customer segments.
 
 ---
 
@@ -13,25 +13,28 @@ A retail leadership team needs an executive dashboard to monitor sales performan
 | Attribute | Value |
 |---|---|
 | File | `dashboard_sales_data.xlsx` |
-| Rows | 4,200 orders |
+| Total rows | 4,200 orders |
 | Columns | 20 |
-| Date range | January 2024 – December 2025 |
+| Date range | January 2024 – December 2025 (24 months) |
 | Regions | North, South, East, West |
 | Categories | Furniture, Office Supplies, Technology |
+| Sub-categories | 12 (Accessories, Art, Binders, Bookcases, Chairs, Copiers, Furnishings, Labels, Machines, Paper, Phones, Storage, Tables) |
 | Customer Segments | Consumer, Corporate, Home Office |
 | Ship Modes | Same Day, First Class, Second Class, Standard Class |
-| Campaign Channels | Organic, Social, Referral, Paid, Email (24 missing) |
+| Campaign Channels | Organic, Social, Referral, Paid, Email |
 
-### Key KPIs
+### Key Business Metrics (Full Dataset)
+
 | Metric | Value |
 |---|---|
-| Total Sales | Rs 21.7 Crore |
-| Total Profit | Rs 3.33 Crore |
-| Overall Margin | 15.3% |
+| Total Sales | Rs 21,70,17,651.92 |
+| Total Profit | Rs 3,33,06,312.84 |
+| Overall Profit Margin | 15.35% |
 | Total Orders | 4,200 |
-| Return Rate | 4.5% |
-| Avg Discount | 13.7% |
-| Avg Delivery Days | 3.5 |
+| Unique Customers | Approx. 4,200 (one order per customer_id in this dataset) |
+| Overall Return Rate | 4.55% (191 returns) |
+| Average Order Value | Rs 51,670.87 |
+| Average Delivery Days | 3.88 days across all modes |
 
 ---
 
@@ -39,15 +42,17 @@ A retail leadership team needs an executive dashboard to monitor sales performan
 
 **File:** `tableau/executive_dashboard.twbx`
 
-The packaged workbook contains:
-- The source dataset embedded (`data/dashboard_sales_data.xlsx`)
-- 7 individual worksheet views
-- 1 executive dashboard combining all views
-- 8 calculated fields
-- 6 interactive filters
-- 3 dashboard actions (filter, highlight, cross-sheet)
+The packaged workbook contains the source dataset embedded within the file and requires no external data connection to open. It was built entirely in Tableau Desktop and saved as a Packaged Workbook (.twbx).
 
-**Opening the file:** Open in Tableau Desktop 2024.x or Tableau Public (free). The workbook is self-contained — no external data connection required.
+### Workbook Contents
+
+| Component | Count | Details |
+|---|---|---|
+| Worksheets | 11 | 4 KPI sheets + 7 analytical chart sheets |
+| Dashboards | 1 | Executive Dashboard combining all 11 sheets |
+| Calculated fields | 8 | All required fields present |
+| Filters on dashboard | 1 interactive (Region) + Dashboard action filter | |
+| Dashboard actions | 1 | Filter action from Regional Performance to all sheets |
 
 ---
 
@@ -55,98 +60,108 @@ The packaged workbook contains:
 
 | Field | Formula | Business Purpose |
 |---|---|---|
-| **Profit Margin** | `[profit] / [sales]` | Core profitability KPI across all views |
-| **Cost** | `[sales] - [profit]` | Enables cost trend and cost-of-returns analysis |
-| **Average Order Value** | `[sales] / COUNTD([order_id])` | Measures per-order revenue quality by segment |
-| **Return Rate** | `SUM([return_flag]) / COUNT([order_id])` | Guardrail metric for product/category risk |
-| **Shipping Delay Bucket** | IF/ELSEIF logic on delivery_days | Groups 0→"Same Day", 1→"1 Day", 2-3→"2-3 Days", 4-7→"4-7 Days", 8+→"8+ Days" |
-| **Discount Band** | IF/ELSEIF logic on discount | Groups 0%, 1-10%, 11-20%, 21-30%, 31-50%, >50% |
-| **Is Returned** | IF return_flag=1 THEN "Returned" | Readable dimension for return analysis |
-| **Profit Status** | IF profit>0 THEN "Profitable" | Quick loss-maker identification |
+| **Profit Margin** | `[profit] / [sales]` | Core profitability KPI displayed in KPI card and colour encodings |
+| **Cost** | `[sales] - [profit]` | Cost structure analysis |
+| **Average Order Value** | `SUM([sales]) / COUNTD([order_id])` | Revenue quality per transaction |
+| **Return Rate** | `SUM([return_flag]) / COUNT([order_id])` | Guardrail metric — return risk monitoring |
+| **Shipping Delay Bucket** | IF [delivery_days]=0 THEN "Same Day" ELSEIF [delivery_days]=1 THEN "1 Day" ELSEIF [delivery_days]<=3 THEN "2-3 Days" ELSEIF [delivery_days]<=7 THEN "4-7 Days" ELSE "8+ Days" END | Groups delivery speed into business-meaningful tiers |
+| **Discount Band** | IF [discount]=0 THEN "0%" ELSEIF [discount]<=0.10 THEN "1-10%" ELSEIF [discount]<=0.20 THEN "11-20%" ELSEIF [discount]<=0.30 THEN "21-30%" ELSEIF [discount]<=0.50 THEN "31-50%" ELSE ">50%" END | Segments discount levels for profit impact analysis |
+| **Is Returned** | IF [return_flag]=1 THEN "Returned" ELSE "Not Returned" END | Human-readable return dimension |
+| **Profit Status** | IF [profit]>0 THEN "Profitable" ELSE "Loss" END | Loss detection flag per order |
 
 ---
 
 ## Dashboard Components
 
-### KPI Cards (4)
-- Total Sales (Rs 21.7 Cr)
-- Total Profit (Rs 3.33 Cr, 15.3% margin)
-- Total Orders (4,200, AOV: Rs 51,670)
-- Return Rate (4.5%, Furniture: 7.7% ⚠)
+### KPI Cards (4 sheets — top row of dashboard)
 
-### Chart Views (7)
-| View | Chart Type | Primary Question |
+| KPI Sheet | Metric Displayed | Value |
 |---|---|---|
-| Sales Trend | Dual-line + area | How are sales/profit trending monthly? |
-| Regional Performance | Horizontal bar | Which regions lead in sales and margin? |
-| Category Profitability | Bar + conditional colour | Which categories deliver acceptable margins? |
-| Customer Segment View | Grouped bar | How do segments compare on sales and margin? |
-| Shipping Performance | Horizontal bar (colour-coded) | Which ship modes are fastest? |
-| Discount vs Profit | Scatter plot | Where is the discount-to-loss tipping point? |
-| Return Analysis | Grouped bar | Which categories/segments have highest return rates? |
-| Sub-Category Profit | Diverging horizontal bar | Which sub-categories are loss-making? |
+| KPI Sales | Total Sales | Rs 21,70,17,651.92 |
+| KPI Profit | Total Profit | Rs 3,33,06,313 |
+| KPI – Profit Margin | Profit Margin % | 15.35% (note: displayed as 55,118.9% due to aggregation — fix by changing to AVG or using SUM/SUM formula) |
+| KPI – Return Rate | Return Rate % | 4.55% |
+
+### Chart Sheets (7 sheets — body of dashboard)
+
+| Sheet Name | Chart Type | Primary Question Answered |
+|---|---|---|
+| Sales Trend | Dual-axis line chart | How are sales and profit trending month by month? |
+| Regional Performance | Horizontal bar, colour by profit | Which regions lead in sales and are they all profitable? |
+| Category Profitability | Stacked bar by sub-category + avg reference line | Which categories and sub-categories drive profit? |
+| Customer Segment View | Bar chart, colour by profit | How do the three segments compare on sales and margin? |
+| Shipping Performance | Horizontal bar by delay bucket, colour by ship mode | Which ship modes are fastest and what are typical delays? |
+| Discount vs Profit | Scatter plot, colour by category, size by sales, trend lines | Where does discounting destroy profit? |
+| Return Analysis | Stacked bar, colour by customer segment | Which categories and segments have the most returns? |
 
 ---
 
 ## Filters and Interactions
 
-### Global Filters (6 — apply to all sheets)
-1. **Region** — dropdown (North / South / East / West / All)
-2. **Category** — dropdown (Furniture / Office Supplies / Technology / All)
-3. **Customer Segment** — dropdown (Consumer / Corporate / Home Office / All)
-4. **Ship Mode** — dropdown (Same Day / First Class / Second Class / Standard Class / All)
-5. **Campaign Channel** — dropdown (Organic / Social / Referral / Paid / Email / All)
-6. **Order Date** — date range slider (Jan 2024 – Dec 2025)
+### Interactive Filter
+- **Region filter** — applied on Sales Trend sheet, accessible from dashboard. Allows filtering to individual regions (All / East / North / South / West).
 
-### Dashboard Actions (3)
-1. **Filter by Region**: Click a region bar → all other views filter to that region
-2. **Filter by Category**: Click a category bar → Discount vs Profit scatter updates for that category
-3. **Highlight by Segment**: Hover over a segment in Customer Segment View → highlights same segment in Return Analysis
+### Dashboard Action
+- **Filter by Region action** — clicking any bar in the Regional Performance chart filters all other charts on the dashboard to show only that region's data. Clicking the same bar again or pressing Escape clears the filter and returns all charts to full view.
+
+### How to Use the Dashboard
+1. Start with the KPI cards for a headline summary
+2. Review Sales Trend for the time dimension
+3. Click a region bar in Regional Performance to filter everything to that region
+4. Check Category Profitability and Discount vs Profit to understand margin drivers
+5. Check Return Analysis and Shipping Performance for operational risks
+6. Clear the region filter (Escape) to return to full view
 
 ---
 
 ## Key Business Insights
 
-1. **Technology drives 71% of revenue at 18.2% margin** — the company's core engine
-2. **Furniture has only 6.9% margin AND 7.7% return rate** — double-sided risk
-3. **Discounts above 30% produce loss-making orders** (avg profit = −Rs 1,601)
-4. **South region leads in volume** (Rs 64.7M); East leads in margin efficiency (15.6%)
-5. **Home Office is the most valuable segment** (highest sales + highest margin)
-6. **Referral channel delivers better margin quality** than Paid channel
-7. **August is a recurring dip month** — requires proactive seasonal promotion
-8. **Standard Class (4.7-day avg) dominates volume** but may risk customer satisfaction
+### What is performing well
+1. **Technology drives the business** — Rs 2.80 Cr profit at 18.22% margin, lowest return rate (3.03%), four strong sub-categories
+2. **South leads in volume** — Rs 6.47 Cr in sales, profitable at 15.44% margin
+3. **All four regions are profitable** — Regional Performance chart shows no red (loss) colouring anywhere
+4. **Three balanced segments** — Home Office (Rs 7.45 Cr), Consumer (Rs 7.19 Cr), Corporate (Rs 7.06 Cr) — no single-segment concentration risk
+
+### What needs attention
+5. **Furniture double risk** — 6.89% margin AND 7.67% return rate — worst category on both dimensions simultaneously
+6. **Discounts above 30% are loss-making** — average profit per order = Rs −1,601 at 31–50% band
+7. **August is a predictable dip** — visible in both 2024 and 2025 on the Sales Trend chart
+8. **West margin lags East** — same sales volume (Rs 4.89 Cr each) but West margin (15.14%) trails East (15.55%)
 
 ---
 
 ## Dashboard Story Summary
 
-The business is fundamentally profitable but faces two urgent risks: a Furniture category that is both low-margin and high-return, and a discounting policy that produces structural losses above 30%. Technology's dominance (71% revenue share) is a strength but also a concentration risk. South and Home Office are clear bright spots. The dashboard narrative moves from macro (KPI cards → trend) to diagnostic (discount, returns, shipping), enabling leadership to move from "what happened" to "what to do" in a single view.
+The retail business is fundamentally healthy — profitable across all regions, balanced across segments, and powered by a strong Technology category. But two structural issues are visible in the dashboard and demand leadership action before the next planning cycle.
 
-Full story: `outputs/dashboard_story.md`
+First, Furniture is destroying value from both ends: low margins (6.89%) and high returns (7.67%), particularly from Home Office customers. Second, the discounting practice produces loss-making orders above 30% discount — the Discount vs Profit scatter chart shows trend lines clearly crossing zero at that threshold.
+
+The recommended actions in priority order: (1) cap discounts at 25% without GM approval, (2) fix the Profit Margin KPI card formula, (3) audit Furniture sub-categories for margin viability, (4) plan proactively for August's recurring dip.
+
+Full narrative: `outputs/dashboard_story.md`
 
 ---
 
 ## Assumptions and Limitations
 
-- Profit is gross profit (sales minus cost of goods); does not include operational or shipping overhead
-- `customer_rating` has 32 missing values — excluded from rating-based calculations
-- `campaign_channel` has 24 missing values — channel analysis slightly undercounts some channels
-- Return reason is not captured in the dataset — can identify WHERE returns occur but not WHY
-- The Tableau workbook requires Tableau Desktop 2024.1+ or Tableau Public to open correctly
-- The .twbx file embeds the data and does not require any external database connection
-- Screenshots were generated from a Python-built replica of the Tableau dashboard for submission purposes
+- Profit is gross profit (sales minus cost of goods) — does not include shipping costs, return handling, or operational overheads. Actual net margin would be lower than 15.35%.
+- Return reason is not captured in the dataset — returns are flagged (1/0) but the reason (damaged, wrong item, changed mind) is unknown.
+- The Profit Margin KPI card currently displays 55,118.9% instead of 15.35% due to a Tableau aggregation issue (SUM of row-level margins rather than total profit/total sales). The correct value is 15.35%. Fix: change formula to `{SUM([profit])/SUM([sales])}` or change aggregation to AVG.
+- Campaign channel has some missing values — channel-level analysis may slightly undercount some channels.
+- 24 months of data provides good trend visibility but is insufficient for formal seasonality modelling or forecasting.
+- The dashboard filter action was built using Regional Performance as the source — clicking bars in other charts does not trigger cross-filtering (this would require additional filter actions).
 
 ---
 
 ## Screenshots Included
 
-| File | Shows |
+| File | What It Shows |
 |---|---|
-| `screenshots/full_dashboard.png` | Complete 8-chart executive dashboard with KPI cards |
-| `screenshots/sales_trend_view.png` | 4-panel sales trend analysis: monthly sales, profit, margin, YoY comparison |
-| `screenshots/regional_performance_view.png` | Regional sales bars, margin comparison, segment heatmap, return rate by region |
-| `screenshots/category_profitability_view.png` | Category margin, sales share, sub-category profit, discount-category interaction |
-| `screenshots/filter_interaction_view.png` | 6-panel filter demonstration: segment×region, campaign channel, scatter with segment, filtered Technology view |
+| `screenshots/full_dashboard.png` | Complete Executive Dashboard — all 11 sheets, 4 KPI cards, title, 7 chart views, layout |
+| `screenshots/sales_trend_view.png` | Monthly Sales & Profit Trend dual-axis line chart with Region filter and Measure Names legend |
+| `screenshots/regional_performance_view.png` | Regional Performance horizontal bar chart sorted by sales, colour-encoded by profit |
+| `screenshots/category_profitability_view.png` | Category Profitability stacked bar by sub-category with average reference line |
+| `screenshots/filter_interaction_view.png` | Executive Dashboard with East region selected via filter action — all charts filtered simultaneously |
 
 ---
 
@@ -155,18 +170,18 @@ Full story: `outputs/dashboard_story.md`
 ```
 part4_tableau_dashboard/
 ├── data/
-│   └── dashboard_sales_data.xlsx       ← Source dataset (4,200 orders)
+│   └── dashboard_sales_data.xlsx          ← Source dataset (4,200 orders, 20 columns)
 ├── tableau/
-│   └── executive_dashboard.twbx        ← Packaged Tableau workbook (self-contained)
+│   └── executive_dashboard.twbx           ← Packaged Tableau workbook (self-contained)
 ├── outputs/
-│   ├── dashboard_story.md              ← Leadership-facing narrative
-│   ├── business_insights.md            ← 8 data-backed insights with actions
-│   └── chart_selection_justification.md ← Chart design rationale
+│   ├── dashboard_story.md                 ← Leadership-facing narrative
+│   ├── business_insights.md               ← 8 data-backed insights with evidence and actions
+│   └── chart_selection_justification.md   ← Chart design rationale for all 7 views
 ├── screenshots/
-│   ├── full_dashboard.png
-│   ├── sales_trend_view.png
-│   ├── regional_performance_view.png
-│   ├── category_profitability_view.png
-│   └── filter_interaction_view.png
+│   ├── full_dashboard.png                 ← Complete dashboard view
+│   ├── sales_trend_view.png               ← Sales Trend sheet
+│   ├── regional_performance_view.png      ← Regional Performance sheet
+│   ├── category_profitability_view.png    ← Category Profitability sheet
+│   └── filter_interaction_view.png        ← Dashboard with filter action active
 └── README.md
 ```
